@@ -39,7 +39,7 @@ Publish
     {
         "command": "station-data",
         "stations": [
-        "064110003",
+            "064110003"
         ]
     }
 
@@ -51,7 +51,7 @@ Publish
     {
         "command": "station-data",
         "stations": [
-        "064110003", "057110000"
+            "064110003", "057110000"
         ]
     }
 
