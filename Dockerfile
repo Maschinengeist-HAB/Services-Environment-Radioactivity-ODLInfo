@@ -5,7 +5,8 @@ ENV MQTT_HOST=message-broker \
     MQTT_RETAIN=1 \
     MQTT_KEEPALIVE=120 \
     MQTT_BASE_TOPIC="odlinfo" \
-    TZ=Europe/Berlin
+    TZ=Europe/Berlin \
+    DEBUG=false
 
 RUN apk add \
     zip \

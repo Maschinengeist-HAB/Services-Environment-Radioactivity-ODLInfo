@@ -15,7 +15,10 @@ define('MQTT_PORT',         $_ENV['MQTT_PORT']          ?: 1883);
 define('MQTT_RETAIN',       $_ENV['MQTT_RETAIN']        ?: 1);
 define('MQTT_KEEPALIVE',    $_ENV['MQTT_KEEPALIVE']     ?: 1);
 define('MQTT_BASE_TOPIC',   $_ENV['MQTT_BASE_TOPIC']    ?: 'odlinfo');
-define('DEBUG',             $_ENV['DEBUG'] == 1);
+
+$debug = $_ENV['DEBUG'] ?: false;
+$debug = $debug == 'true';
+define('DEBUG', $debug);
 
 define('MQTT_PUBLISH_TOPIC', array(
     'result' => array(
@@ -75,7 +78,40 @@ function build_topics($array, $basetopic, &$returnVal) {
     }
 }
 
+# ------------------------------------------------------------------------------------------ start
+error_log('*** WELCOME TO THE BfS Ortsdosisleistung MQTT Gateway Service');
+
+if (DEBUG === true) {
+    error_log('Configuration: ');
+
+    $values = array(
+        'MQTT Host' => MQTT_HOST,
+        'MQTT Port' => MQTT_PORT,
+        'MQTT Basetopic' => MQTT_BASE_TOPIC,
+        'MQTT Keep alive' => MQTT_KEEPALIVE,
+        'Retain messages' => MQTT_RETAIN,
+    );
+
+    foreach($values as $desc => $value) {
+        error_log("\t$desc: $value");
+    }
+
+    error_log("\tMQTT Topics:");
+    error_log("\t\tPublish:");
+
+    foreach (array_keys(MQTT_PUBLISH_TOPIC) as $topics) {
+        error_log("\t\t\t$topics -> " . MQTT_PUBLISH_TOPIC["$topics"]['topic'] );
+    }
+
+    error_log("\t\tSubscribe:");
+
+    foreach (array_keys(MQTT_SUBSCRIBE_TOPIC) as $topics) {
+        error_log("\t\t\t$topics -> " . MQTT_SUBSCRIBE_TOPIC["$topics"]['topic'] );
+    }
+}
+
 # ------------------------------------------------------------------------------------------ subscribe to trigger and execute
+
 $mqtt = new \PhpMqtt\Client\MqttClient(MQTT_HOST, MQTT_PORT);
 
 $connectionSettings = (new \PhpMqtt\Client\ConnectionSettings)

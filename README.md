@@ -4,6 +4,8 @@ MQTT Gateway Service for [German Federal BfS Ortsdosisleistung](https://odlinfo.
 ## Configuration
 The service uses a set of environment variables for configuration in the Dockerfile:
 
+### Connection settings
+
 | Variable          | Usage                                                                          | Default value    |
 |-------------------|--------------------------------------------------------------------------------|------------------|
 | `MQTT_HOST`       | Specifies the MQTT broker host name                                            | `message-broker` |
@@ -11,6 +13,11 @@ The service uses a set of environment variables for configuration in the Dockerf
 | `MQTT_RETAIN`     | Retain messages or not                                                         | `1` (retain)     |
 | `MQTT_KEEPALIVE`  | Keep alive the connection to the MQTT broker every *n* seconds                 | `120`            |
 | `MQTT_BASE_TOPIC` | MQTT base topic, will prepend to the defined topics, i.e. `base_topic/command` | `odlinfo`        |
+
+### Debugging
+
+Enable debugging output with the `DEBUG` environment variable, suitable values are `true` 
+(debugging output on) or `false` (no debugging output). Defaults to `false`.
 
 ## How to pull and run this image
 Pull this image by
