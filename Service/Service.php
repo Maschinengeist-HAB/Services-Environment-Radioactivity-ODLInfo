@@ -6,27 +6,30 @@ namespace Maschinengeist\Services\Environment\Radioactivity\ODLInfo;
 error_reporting(E_ALL);
 date_default_timezone_set($_ENV['TZ'] ?: 'Europe/Berlin');
 
-# ------------------------------------------------------------------------------------------ set date from ENV
+# ------------------------------------------------------------------------------------------ set configuration from ENV
 
-$_ENV['MQTT_HOST'] ?? exit(1);
-$_ENV['MQTT_PORT'] ?? exit(1);
+$_ENV['MQTT_HOST'] ?? exit('MQTT_HOST is not set, no default value is available, aborting.');
 
 define('MQTT_HOST',         $_ENV['MQTT_HOST']);
-define('MQTT_PORT',         $_ENV['MQTT_PORT']);
-define('MQTT_RETAIN',       $_ENV['MQTT_RETAIN'] ?: 1);
-define('MQTT_KEEPALIVE',    $_ENV['MQTT_KEEPALIVE'] ?: 1);
-define('MQTT_BASE_TOPIC',   $_ENV['MQTT_BASE_TOPIC'] ?: 'odlinfo');
+define('MQTT_PORT',         $_ENV['MQTT_PORT']          ?: 1883);
+define('MQTT_RETAIN',       $_ENV['MQTT_RETAIN']        ?: 1);
+define('MQTT_KEEPALIVE',    $_ENV['MQTT_KEEPALIVE']     ?: 1);
+define('MQTT_BASE_TOPIC',   $_ENV['MQTT_BASE_TOPIC']    ?: 'odlinfo');
+define('DEBUG',             $_ENV['DEBUG'] == 1);
 
-define('MQTT_PUBLISH', array(
+define('MQTT_PUBLISH_TOPIC', array(
     'result' => array(
         'topic'     =>  MQTT_BASE_TOPIC . '/station-data',
     ),
     'update-status' => array(
         'topic'     =>  MQTT_BASE_TOPIC . '/update-status',
     ),
+    'command-status' => array(
+        'topic'     =>  MQTT_BASE_TOPIC . '/command-status',
+    ),
 ));
 
-define('MQTT_SUBSCRIBE', array(
+define('MQTT_SUBSCRIBE_TOPIC', array(
     'commands' => array(
         'topic' =>  MQTT_BASE_TOPIC . '/command',
     )
@@ -42,13 +45,17 @@ spl_autoload_register(function ($class_name) {
 
 # ------------------------------------------------------------------------------------------ helper function
 function update_stations(\PhpMqtt\Client\MqttClient $mqtt) {
-    $update_status = ODLInfo::updateStationData();
-    $update_status = ($update_status) ? 'true' : 'false';
+    $update_status = (ODLInfo::updateStationData()) ? 'true' : 'false';
     error_log("Updating stations exited with " . $update_status);
 
     $mqtt->publish(
-        MQTT_PUBLISH['update-status']['topic'], $update_status, 0, 1
+        MQTT_PUBLISH_TOPIC['update-status']['topic'], $update_status, 0, 1
     );
+}
+
+function log_errors($error_msg, \PhpMqtt\Client\MqttClient $mqtt, $topic) {
+    error_log($error_msg);
+    $mqtt->publish($topic, $error_msg, 2, false);
 }
 
 function build_topics($array, $basetopic, &$returnVal) {
@@ -77,7 +84,7 @@ $connectionSettings = (new \PhpMqtt\Client\ConnectionSettings)
     ->setSocketTimeout(300);
 $mqtt->connect($connectionSettings);
 
-$mqtt->subscribe(MQTT_SUBSCRIBE['commands']['topic'], callback: function ($topic, $message, $retained) use ($mqtt, $connectionSettings) {
+$mqtt->subscribe(MQTT_SUBSCRIBE_TOPIC['commands']['topic'], callback: function ($topic, $message, $retained) use ($mqtt, $connectionSettings) {
     printf("Received message '%s' on topic '%s'". PHP_EOL, $message, $topic);
 
     if ($message_data = json_decode($message, true)) {
@@ -88,10 +95,8 @@ $mqtt->subscribe(MQTT_SUBSCRIBE['commands']['topic'], callback: function ($topic
                 break;
 
             case 'station-data':
-                error_log("Requested data for stations: ". print_r($message_data['stations'], true));
-
                 if (!is_array($message_data['stations']) || 0 == count($message_data['stations'])) {
-                    error_log('No stations to filter for provided');
+                    log_errors('No stations to filter for provided', $mqtt, MQTT_PUBLISH_TOPIC['update-status']);
                 }
 
                 try {
@@ -102,7 +107,7 @@ $mqtt->subscribe(MQTT_SUBSCRIBE['commands']['topic'], callback: function ($topic
 
                         build_topics(
                             $single_station->toArray(),
-                            MQTT_PUBLISH['result']['topic'] . "/{$single_station->kenn}",
+                            MQTT_PUBLISH_TOPIC['result']['topic'] . "/{$single_station->kenn}",
                             $pubdata
                         );
 
@@ -111,7 +116,7 @@ $mqtt->subscribe(MQTT_SUBSCRIBE['commands']['topic'], callback: function ($topic
                         }
                     }
                 } catch (\Exception $e) {
-                    error_log("Fehler: " . $e->getMessage());
+                    log_errors($e->getMessage(), $mqtt, MQTT_PUBLISH_TOPIC['update-status']);
                 }
 
                 break;
@@ -121,12 +126,12 @@ $mqtt->subscribe(MQTT_SUBSCRIBE['commands']['topic'], callback: function ($topic
     }
 
     if ($message == 'update-station-data') {
-        error_log('Requested update for station without JSON command');
+        log_errors('Requested update for station without JSON command', $mqtt, MQTT_PUBLISH_TOPIC['command-status']);
         update_stations($mqtt);
         return;
     }
 
-    error_log("$message is not a valid JSON string");
+    log_errors("$message is not a valid JSON string", $mqtt, MQTT_PUBLISH_TOPIC['command-status']);
 
 }, qualityOfService: 2);
 
