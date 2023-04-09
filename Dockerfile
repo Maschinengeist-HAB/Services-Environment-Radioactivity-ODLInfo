@@ -1,4 +1,4 @@
-FROM arm64v8/php:alpine
+FROM php:8.1-alpine
 
 ENV MQTT_HOST=message-broker \
     MQTT_PORT=1883 \
@@ -8,7 +8,7 @@ ENV MQTT_HOST=message-broker \
     TZ=Europe/Berlin \
     DEBUG=false
 
-RUN apk --no-cache add bash
+RUN apk add bash
 
 LABEL org.opencontainers.image.source=https://github.com/Maschinengeist-HAB/Services-Environment-Radioactivity-ODLInfo
 LABEL org.opencontainers.image.description="BfS Ortsdosisleistung MQTT Gateway"
