@@ -1,1 +1,5 @@
 .idea
+composer.phar
+
+Service/composer.lock
+Service/vendor
