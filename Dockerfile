@@ -1,13 +1,5 @@
 FROM php:8.1-alpine
 
-ENV MQTT_HOST=message-broker \
-    MQTT_PORT=1883 \
-    MQTT_RETAIN=1 \
-    MQTT_KEEPALIVE=120 \
-    MQTT_BASE_TOPIC="odlinfo" \
-    TZ=Europe/Berlin \
-    DEBUG=false
-
 RUN apk add bash
 
 LABEL org.opencontainers.image.source=https://github.com/Maschinengeist-HAB/Services-Environment-Radioactivity-ODLInfo
