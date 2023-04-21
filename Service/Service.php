@@ -169,6 +169,16 @@ $mqtt->subscribe(MQTT_SUBSCRIBE_TOPIC['commands']['topic'], callback: function (
 
     log_errors("$message is not a valid JSON string", $mqtt, MQTT_PUBLISH_TOPIC['command-status']);
 
+if ( function_exists('pcntl_async_signals') ) {
+    pcntl_async_signals(true);
+}
+
+if (function_exists('pcntl_signal')) {
+    pcntl_signal(SIGINT, function () use ($mqttClient) {
+        $mqttClient->interrupt();
+    });
+}
+
 }, qualityOfService: 2);
 
 $mqtt->loop(true);

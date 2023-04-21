@@ -1,5 +1,7 @@
 FROM php:8.1-alpine
 
+RUN docker-php-ext-configure pcntl --enable-pcntl  && docker-php-ext-install -j$(nproc) pcntl
+
 LABEL org.opencontainers.image.source="https://github.com/Maschinengeist-HAB/Services-Environment-Radioactivity-ODLInfo"
 LABEL org.opencontainers.image.description="BfS Ortsdosisleistung MQTT Gateway"
 LABEL org.opencontainers.image.licenses="MIT"
